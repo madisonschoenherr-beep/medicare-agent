@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Medicare Agent Assistant</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f5f7fa; --surface: #ffffff; --surface2: #f0f4f8;
+    --border: #e2e8f0; --border2: #cbd5e1;
+    --text: #0f172a; --text2: #475569; --text3: #94a3b8;
+    --blue: #185FA5; --blue-light: #E6F1FB; --blue-dark: #0c447c;
+    --radius: 12px; --radius-sm: 8px;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; }
+  #app { width: 100%; max-width: 720px; background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); display: flex; flex-direction: column; height: 88vh; max-height: 760px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.07); }
+  #header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; background: var(--surface2); }
+  #header-icon { width: 38px; height: 38px; border-radius: var(--radius-sm); background: var(--blue-light); display: flex; align-items: center; justify-content: center; }
+  #header-icon i { font-size: 20px; color: var(--blue); }
+  #header-text h1 { font-size: 15px; font-weight: 600; color: var(--text); }
+  #header-text p { font-size: 12px; color: var(--text2); margin-top: 1px; }
+  #chips { display: flex; gap: 7px; padding: 10px 14px; flex-wrap: wrap; border-bottom: 1px solid var(--border); background: var(--surface2); }
+  .chip { font-size: 12px; padding: 5px 12px; border-radius: 99px; border: 1px solid var(--border2); color: var(--text2); cursor: pointer; background: var(--surface); transition: all 0.15s; white-space: nowrap; }
+  .chip:hover { background: var(--blue-light); color: var(--blue); border-color: var(--blue); }
+  #messages { flex: 1; overflow-y: auto; padding: 16px 14px; display: flex; flex-direction: column; gap: 14px; }
+  .msg { display: flex; gap: 10px; align-items: flex-start; max-width: 92%; }
+  .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+  .bubble { padding: 10px 14px; border-radius: 14px; font-size: 14px; line-height: 1.65; }
+  .msg.assistant .bubble { background: var(--surface2); color: var(--text); border-radius: 4px 14px 14px 14px; border: 1px solid var(--border); }
+  .msg.user .bubble { background: var(--blue); color: #fff; border-radius: 14px 4px 14px 14px; }
+  .avatar { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+  .avatar.bot { background: var(--blue-light); }
+  .avatar.bot i { font-size: 14px; color: var(--blue); }
+  .avatar.user { background: var(--blue); font-size: 11px; font-weight: 600; color: #fff; }
+  .typing { display: flex; gap: 4px; align-items: center; padding: 4px 0; }
+  .typing span { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); animation: bounce 1.2s infinite; }
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+  #input-row { display: flex; gap: 8px; padding: 12px 14px; border-top: 1px solid var(--border); background: var(--surface2); }
+  #user-input { flex: 1; border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 9px 13px; font-size: 14px; font-family: inherit; resize: none; min-height: 38px; max-height: 100px; color: var(--text); background: var(--surface); outline: none; }
+  #user-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(24,95,165,0.1); }
+  #send-btn { width: 38px; height: 38px; border-radius: var(--radius-sm); background: var(--blue); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: opacity 0.15s; }
+  #send-btn:hover { opacity: 0.85; }
+  #send-btn i { font-size: 16px; color: #fff; }
+  #send-btn:disabled { opacity: 0.35; cursor: default; }
+  #disclaimer { font-size: 11px; color: var(--text3); text-align: center; padding: 6px 14px 10px; background: var(--surface2); }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="header">
+    <div id="header-icon"><i class="ti ti-shield-check"></i></div>
+    <div id="header-text">
+      <h1>Medicare Agent Assistant</h1>
+      <p>Parts A · B · C · D &nbsp;·&nbsp; Enrollment periods &nbsp;·&nbsp; Plan costs</p>
+    </div>
+  </div>
+  <div id="chips">
+    <div class="chip" onclick="sendQ('What are the differences between Parts A, B, C, and D?')">Parts A·B·C·D overview</div>
+    <div class="chip" onclick="sendQ('What are all the Medicare enrollment periods agents need to know?')">Enrollment periods</div>
+    <div class="chip" onclick="sendQ('How do I compare Medicare Advantage vs Medigap for a client?')">Advantage vs Medigap</div>
+    <div class="chip" onclick="sendQ('What are the 2025 Part B premium and deductible amounts?')">2025 costs</div>
+    <div class="chip" onclick="sendQ('What triggers a Special Enrollment Period?')">SEP triggers</div>
+  </div>
+  <div id="messages">
+    <div class="msg assistant">
+      <div class="avatar bot"><i class="ti ti-shield-check"></i></div>
+      <div class="bubble">Hello! I'm your Medicare reference assistant. Ask me about coverage rules, enrollment windows, plan comparisons, or cost benchmarks.<br><br>Use the quick topics above or type your question below.</div>
+    </div>
+  </div>
+  <div id="input-row">
+    <textarea id="user-input" placeholder="Ask about Medicare rules, costs, enrollment…" rows="1"></textarea>
+    <button id="send-btn" onclick="handleSend()" aria-label="Send"><i class="ti ti-send"></i></button>
+  </div>
+  <div id="disclaimer">For licensed agent use only. Verify details with current CMS guidelines before client presentations.</div>
+</div>
+
+<script>
+const SYSTEM = `You are a Medicare reference assistant for licensed insurance agents and brokers. Be accurate, concise, and practical.
+
+MEDICARE PARTS:
+- Part A: Hospital insurance. Premium-free for most (40+ work credits). 2025 deductible: $1,676/benefit period. Covers inpatient, skilled nursing, hospice.
+- Part B: Medical insurance (outpatient, preventive, DME). 2025 standard premium: $185/month. Annual deductible: $257. Covers 80% after deductible.
+- Part C (Medicare Advantage): Private plans replacing A+B, often includes Part D. Must cover all A+B benefits. Network-based (HMO, PPO, PFFS, SNP).
+- Part D: Prescription drug coverage. Standalone PDPs or bundled in MA. 2025 out-of-pocket cap: $2,000. Standard deductible up to $590.
+
+ENROLLMENT PERIODS:
+- IEP (Initial): 7-month window around 65th birthday (3 before, month of, 3 after).
+- GEP (General): Jan 1–Mar 31. Coverage starts July 1. Late penalties apply.
+- AEP (Annual): Oct 15–Dec 7. Switch/drop MA or PDP. Coverage Jan 1.
+- OEP (MA Open): Jan 1–Mar 31. Switch MA or return to Original Medicare once.
+- SEP: Triggered by losing employer coverage, moving, dual eligibility, plan termination, etc.
+- Late penalties: Part B = 10% per 12-month period (lifetime). Part D = 1% per month delayed (lifetime).
+
+PLAN COMPARISON:
+- Original Medicare vs MA: OM = nationwide access, no networks, higher OOP; MA = networks, lower/no premium, extra benefits.
+- Medigap: Alongside OM. Plans A, B, C, D, F, G, K, L, M, N. Plan G most popular post-2020. Guaranteed issue at 65 only in most states.
+- IRMAA: High-income surcharge. 2025 thresholds: individuals >$106,000, couples >$212,000.
+- Low-income help: LIS/Extra Help for Part D. Medicare Savings Programs (MSP) for A/B cost-sharing.
+
+Keep answers concise (3–6 sentences or a short list). Always remind agents to verify current CMS data and state-specific rules for client situations.`;
+
+const msgs = document.getElementById('messages');
+const input = document.getElementById('user-input');
+const btn = document.getElementById('send-btn');
+let history = [];
+
+function addMsg(role, html) {
+  const d = document.createElement('div');
+  d.className = 'msg ' + role;
+  const isUser = role === 'user';
+  d.innerHTML = `<div class="avatar ${isUser ? 'user' : 'bot'}">${isUser ? 'You' : '<i class="ti ti-shield-check"></i>'}</div><div class="bubble">${html}</div>`;
+  msgs.appendChild(d);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function showTyping() {
+  const d = document.createElement('div');
+  d.className = 'msg assistant'; d.id = 'typing-ind';
+  d.innerHTML = `<div class="avatar bot"><i class="ti ti-shield-check"></i></div><div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight;
+}
+
+function fmt(t) {
+  return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n\n/g,'<br><br>').replace(/\n[-•] /g,'<br>• ').replace(/\n/g,'<br>');
+}
+
+async function sendQ(q) { input.value = q; await handleSend(); }
+
+async function handleSend() {
+  const text = input.value.trim(); if (!text) return;
+  input.value = ''; btn.disabled = true;
+  addMsg('user', text);
+  history.push({ role: 'user', content: text });
+  showTyping();
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ system: SYSTEM, messages: history })
+    });
+    const data = await res.json();
+    const reply = data.reply || 'Sorry, no response received.';
+    history.push({ role: 'assistant', content: reply });
+    document.getElementById('typing-ind')?.remove();
+    addMsg('assistant', fmt(reply));
+  } catch(e) {
+    document.getElementById('typing-ind')?.remove();
+    addMsg('assistant', 'Connection error — please try again.');
+  }
+  btn.disabled = false; input.focus();
+}
+
+input.addEventListener('keydown', e => { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } });
+input.addEventListener('input', () => { input.style.height='auto'; input.style.height=Math.min(input.scrollHeight,100)+'px'; });
+</script>
+</body>
+</html>
